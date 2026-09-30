@@ -133,7 +133,8 @@ in
       parted -s "$TARGET_DISK" -- mklabel gpt
       parted -s "$TARGET_DISK" -- mkpart ESP fat32 1MiB 513MiB
       parted -s "$TARGET_DISK" -- set 1 esp on
-      parted -s "$TARGET_DISK" -- mkpart root ext4 513MiB 100%
+      parted -s "$TARGET_DISK" -- mkpart swap linux-swap 513MiB 16897MiB
+      parted -s "$TARGET_DISK" -- mkpart root ext4 16897MiB 100%
 
       # Wait for the kernel/udev to create the partition nodes
       partprobe "$TARGET_DISK" || true
@@ -141,14 +142,17 @@ in
 
       if [[ "$TARGET_DISK" == *nvme* || "$TARGET_DISK" == *mmcblk* ]]; then
         PART_BOOT="''${TARGET_DISK}p1"
-        PART_ROOT="''${TARGET_DISK}p2"
+        PART_SWAP="''${TARGET_DISK}p2"
+        PART_ROOT="''${TARGET_DISK}p3"
       else
         PART_BOOT="''${TARGET_DISK}1"
-        PART_ROOT="''${TARGET_DISK}2"
+        PART_SWAP="''${TARGET_DISK}2"
+        PART_ROOT="''${TARGET_DISK}3"
       fi
 
       step 4 "Formatting"
       mkfs.vfat -F 32 -n BOOT "$PART_BOOT"
+      mkswap -f -L swap "$PART_SWAP"
       mkfs.ext4 -F -L nixos-installing "$PART_ROOT"
       udevadm settle
 
@@ -156,6 +160,7 @@ in
       mount "$PART_ROOT" /mnt
       mkdir -p /mnt/boot
       mount "$PART_BOOT" /mnt/boot
+      swapon "$PART_SWAP"
 
       nixos-generate-config --root /mnt
 
