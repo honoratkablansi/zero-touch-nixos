@@ -17,6 +17,9 @@ let
       # Needed by most Wi-Fi chips to work after the first reboot
       hardware.enableRedistributableFirmware = true;
 
+      # The generated config may enable NetworkManager, which conflicts with
+      # networking.wireless.networks, so force it off on the installed system
+      networking.networkmanager.enable = lib.mkForce false;
       networking.wireless.enable = true;
       networking.wireless.networks."${ssid}".psk = "${psk}";
 
@@ -29,7 +32,7 @@ let
       users.users.sv = {
         isNormalUser = true;
         initialPassword = "${loginPassword}";
-        extraGroups = [ "wheel" "networkmanager" ];
+        extraGroups = [ "wheel" ];
         openssh.authorizedKeys.keys = [ "${sshKey}" ];
       };
 
