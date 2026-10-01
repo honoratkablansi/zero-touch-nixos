@@ -114,6 +114,32 @@ ssh root@<machine-ip-address>
 journalctl -u unattended-installer -f
 ```
 
+---
+
+## Security notes
+
+- `configuration.nix` contains your Wi-Fi password, a login password and your SSH key. **Don't push it to a public repository with real values.** Keep real credentials in a private repo, or move them to a file that is listed in `.gitignore`.
+- The Wi-Fi password and the passwords are stored in the Nix store of the ISO, so treat the ISO image itself as sensitive.
+- The live ISO allows root login over SSH with a password. Anyone on your network can try to connect while it's running.
+- The installed system uses `initialPassword` for the normal user. Change it after the first login with `passwd`.
+
+---
+
+## Troubleshooting
+
+| Symptom | Cause and fix |
+|---|---|
+| `experimental Nix feature 'flakes' is disabled` | Flakes must be enabled in the live ISO. `nix.settings.experimental-features` is already set in `configuration.nix`. |
+| `You can not use networking.networkmanager with networking.wireless.networks` | The generated config enables NetworkManager. The installed-system module forces it off with `lib.mkForce false`. |
+| Installer prints `already contains a NixOS install; skipping` | The disk already has a finished install, by design. Wipe the disk manually to reinstall. |
+| Stuck on `Waiting for network...` | Wrong SSID or password, network out of range, or the Wi-Fi chip needs firmware the ISO doesn't include. |
+| Wrong disk was wiped | Detection picks the first non-removable disk. On a machine with several disks, unplug the ones you want to keep. |
+
+For evaluation errors, the last lines under `Failed assertions:` on the screen name the problem. To see the full log later, run `journalctl -u unattended-installer` over SSH on the live system.
+
+---
+
+
 ## License
 
 This project is licensed under the [Apache License, Version 2.0](LICENSE).
